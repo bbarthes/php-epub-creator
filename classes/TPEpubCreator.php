@@ -271,24 +271,25 @@ class TPEpubCreator
      * @access public
      *
      * @param string $path Image's Path
-     * @param string $type Image's Mime-type
+     * @param string|false $type Image's Mime-type
      * @param bool $cover Whether it will or will not be a cover
      *
      * @return bool false if the image does not exists
      */
-    public function AddImage($path = false, $type = false, $cover = 0)
+    public function AddImage($path, $type = false, $cover = false)
     {
         $this->image_key++;
 
         // Checks if the image exists first
-        /*if ( ! file_exists( $path ) ) {
+        if ( ! file_exists( $path ) ) {
             $this->error = 'Cannot find image ' . $path . '.';
-            return;
-        }*/
+            return false;
+        }
 
         $this->images[$this->image_key]['path'] = $path;
         $this->images[$this->image_key]['type'] = $type;
         $this->images[$this->image_key]['cover'] = $cover;
+        return true;
     }
 
     /**
@@ -300,16 +301,16 @@ class TPEpubCreator
      * @since 1.0.0
      * @access public
      *
-     * @param string $content Page content (XHTML)
-     * @param string $file A file that has the page content (XHTML)
+     * @param string|false $content Page content (XHTML)
+     * @param string|false $file A file that has the page content (XHTML)
      * @param string $title Page's title
      * @param bool $download_images Whether to download images from the HTML or not
      *
      * @return bool false if the image does not exists
      */
     public function AddPage(
-        $content = null,
-        $file = null,
+        $content = false,
+        $file = false,
         $title = 'Untitled',
         $download_images = false
     ) {
@@ -319,7 +320,7 @@ class TPEpubCreator
         // If nothing to add, nothing to do
         if (!$content && !$file) {
             $this->error = 'No content or file added.';
-            return;
+            return false;
         }
 
         // If it's XHTML
@@ -359,6 +360,7 @@ class TPEpubCreator
 
         // Set the page title
         $this->pages[$this->key]['title'] = $title;
+        return true;
     }
 
     /**
@@ -369,6 +371,7 @@ class TPEpubCreator
      *
      * @since 1.0.0
      * @access public
+     * @return void
      */
     public function CreateEPUB()
     {
@@ -540,6 +543,7 @@ class TPEpubCreator
      * Open CSS
      *
      * It will simply fill the $css property
+     * @return void
      */
     public function OpenCSS()
     {
@@ -561,6 +565,7 @@ class TPEpubCreator
      * Open OPF
      *
      * Fill the content.opf file ($opf property)
+     * @return void
      */
     private function OpenOPF()
     {
@@ -583,6 +588,7 @@ class TPEpubCreator
      * Close OPF
      *
      * End of the content.opf file
+     * @return void
      */
     private function CloseOPF()
     {
@@ -593,6 +599,7 @@ class TPEpubCreator
      * Create OPF
      *
      * Creates the content.opf file
+     * @return void
      */
     private function CreateOPF()
     {
@@ -609,6 +616,7 @@ class TPEpubCreator
      * Open NCX
      *
      * Fill the toc.ncx content ($ncx property)
+     * @return void
      */
     private function OpenNCX()
     {
@@ -628,6 +636,7 @@ class TPEpubCreator
      * Close NCX
      *
      * Closes the toc.ncx file content
+     * @return void
      */
     private function CloseNCX()
     {
@@ -639,6 +648,7 @@ class TPEpubCreator
      * Create NCX
      *
      * Creates toc.ncx file
+     * @return void
      */
     private function CreateNCX()
     {
@@ -655,6 +665,7 @@ class TPEpubCreator
      * Create folders
      *
      * Create all the temp folders needed
+     * @return void
      */
     private function CreateFolders()
     {
@@ -675,7 +686,7 @@ class TPEpubCreator
         }
 
         // Creates the main temp folder
-        mkdir($this->temp_folder, 0777);
+        mkdir($this->temp_folder, 0777, true);
 
         // Check the folder
         if (!is_dir($this->temp_folder)) {
@@ -704,6 +715,7 @@ class TPEpubCreator
      * Create container
      *
      * Creates the container.xml file
+     * @return void
      */
     private function CreateContainer()
     {
@@ -717,7 +729,12 @@ class TPEpubCreator
 
     /**
      * Create Files
+     * 
+     * @param string $file
+     * @param string|null $content
+     * @return void
      */
+
     private function CreateFile($file, $content = null)
     {
         $handle = fopen($file, 'w+');
@@ -732,12 +749,13 @@ class TPEpubCreator
      *
      * @since 1.0.0
      * @access private
+     * @return bool
      */
     private function CreateZip()
     {
         // Checks the zip extension
         if (!extension_loaded('zip')) {
-            $this->error('zip extension is not loaded');
+            $this->error = 'zip extension is not loaded';
             return false;
         }
 
@@ -753,10 +771,15 @@ class TPEpubCreator
             unlink($this->epub_file);
         }
 
+        $dir = dirname($this->epub_file);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
         $zip = new ZipArchive();
 
         if (!$zip->open($this->epub_file, ZIPARCHIVE::CREATE)) {
-            $this->error('Failed to create zip file.');
+            $this->error = 'Failed to create zip file.';
             return false;
         }
 
@@ -808,5 +831,6 @@ class TPEpubCreator
             rmdir($this->temp_folder . '/OEBPS');
             rmdir($this->temp_folder);
         }
+        return true;
     }
 }
