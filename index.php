@@ -32,13 +32,13 @@ $epub->AddPage( false, 'file.txt', 'Título (check accent)' );
 
 // Add page content directly (just the <body> content)
 // You must not use doctype, head and body tags (only XHTML body content)
-$epub->AddPage( '<b>Test</b>', false, 'Title 2' );
-$epub->AddPage( '<img src="images/2.jpg" />', false, 'Title 3' );
+$epub->AddPage( '<p class="bold">Test</p>', false, 'Title 2' );
+$epub->AddPage( '<div><img src="images/2.jpg" alt="Two goldfish jumping from small bowls into a larger fishbowl in the center."/></div>', false, 'Title 3' );
 
 // Here the last param tells the class to download de image
-$epub->AddPage( '<img src="images/3.jpg" />', false, 'Title 4', true );
+$epub->AddPage( '<div><img src="images/3.jpg" alt="A goldfish jumping from a small bowl into a larger fishbowl, with multiple positions showing its movement through the air."/></div>', false, 'Title 4', true );
 
-$epub->AddPage( '<img src="images/4.jpg" />', false, 'Title 5' );
+$epub->AddPage( '<div><img src="images/4.jpg" alt="A goldfish leaping out of a full fishbowl, with water splashing upwards."/></div>', false, 'Title 5' );
 
 // Add image cover
 // Make sure only one image is set to cover (last argument = true).

@@ -234,7 +234,32 @@ class TPEpubCreator
     public function __construct()
     {
         $this->abspath = dirname(__FILE__);
-        $this->uuid = md5(microtime());
+        $this->uuid = $this->uuidv4();
+    }
+    
+    /**
+     * 
+     * I've taken this code here: https://stackoverflow.com/a/15875555
+     * @return string
+     * @throws Exception
+     */
+    function uuidv4()
+    {
+        $data = '';
+        if (function_exists('random_bytes')) {
+            $data = random_bytes(16);
+        } else {//for php < 7 
+            $strong = false;
+            $data = openssl_random_pseudo_bytes(16, $strong);
+            if ($data === false || $strong === false) {
+                throw new Exception("Impossible de générer des octets aléatoires sécurisés.");
+            }
+        }
+
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // version 4
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // variant RFC 4122
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 
     /**
@@ -463,6 +488,7 @@ class TPEpubCreator
         $page_content .= '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">' . "\r\n";
         $page_content .= '<html xmlns="http://www.w3.org/1999/xhtml">' . "\r\n";
         $page_content .= '<head>' . "\r\n";
+        $page_content .= '<title>##Title</title>' . "\r\n";
         $page_content .= '<meta content="application/xhtml+xml; charset=utf-8" http-equiv="Content-Type"/>' . "\r\n";
         $page_content .= '<link href="css.css" type="text/css" rel="stylesheet"/>' . "\r\n";
         $page_content .= '</head>' . "\r\n";
@@ -482,7 +508,7 @@ class TPEpubCreator
             );
 
             // Fill the page content and ends the XHTML
-            $value['content']  = $page_content . $value['content'];
+            $value['content']  = str_replace("##Title", $value['title'], $page_content) . $value['content'];
             $value['content'] .= '</body></html>';
 
             // Replace the HTML images to the new images
@@ -500,8 +526,8 @@ class TPEpubCreator
 
         // If there's a cover, create its page
         if (!empty($this->cover_img)) {
-            $cover_page  = $page_content;
-            $cover_page .= '<img class="cover-image" width="600" height="800" src="images/' . $this->cover_img . '" />' . "\r\n";
+            $cover_page  = str_replace("##Title", 'Cover', $page_content) ;
+            $cover_page .= '<div><img class="cover-image" width="600" height="800" alt="Cover" src="images/' . $this->cover_img . '" /></div>' . "\r\n";
             $cover_page .= '</body></html>';
             $this->CreateFile($this->temp_folder . '/OEBPS/cover.xhtml', $cover_page);
         }
@@ -547,7 +573,7 @@ class TPEpubCreator
         $this->opf[] = '<dc:rights>' . $this->rights . '</dc:rights>' . "\r\n";
         $this->opf[] = '<dc:publisher>' . $this->publisher . '</dc:publisher>';
         $this->opf[] = '<dc:identifier id="BookID" opf:scheme="UUID">' . $this->uuid . '</dc:identifier>' . "\r\n";
-        $this->opf[] = '<meta name="cover" content="cover" />' . "\r\n";
+        $this->opf[] = '<meta name="cover" content="cover-image" />' . "\r\n";
         $this->opf[] = '</metadata><manifest>' . "\r\n";
         $this->opf[] = '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml" />' . "\r\n";
         $this->opf[] = '<item id="style" href="css.css" media-type="text/css" />' . "\r\n";
@@ -588,8 +614,8 @@ class TPEpubCreator
     {
         $this->ncx[] = '<?xml version="1.0" encoding="UTF-8"?>' . "\r\n";
         $this->ncx[] = '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">' . "\r\n";
-        $this->ncx[] = '<meta name="dtb:uid" content="' . $this->uuid . '"/>' . "\r\n";
         $this->ncx[] = '<head>' . "\r\n";
+        $this->ncx[] = '<meta name="dtb:uid" content="' . $this->uuid . '"/>' . "\r\n";
         $this->ncx[] = '<meta name="dtb:depth" content="1"/>' . "\r\n";
         $this->ncx[] = '<meta name="dtb:totalPageCount" content="0"/>' . "\r\n";
         $this->ncx[] = '<meta name="dtb:maxPageNumber" content="0"/>' . "\r\n";
@@ -736,10 +762,10 @@ class TPEpubCreator
 
         // Folders array
         $folders = [
+            $this->temp_folder,
             $this->temp_folder . '/META-INF',
             $this->temp_folder . '/OEBPS',
-            $this->temp_folder . '/OEBPS/images',
-            $this->temp_folder,
+            $this->temp_folder . '/OEBPS/images'
         ];
 
         // Files we'll delete later

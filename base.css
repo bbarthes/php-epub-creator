@@ -32,3 +32,15 @@ table td, table th {
     color: #444;
     text-align: left;
 }
+
+.underline {
+    text-decoration: underline;
+}
+
+.line-through {
+    text-decoration: line-through;
+}
+
+.bold {
+  font-weight: bold;
+}
